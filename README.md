@@ -38,8 +38,6 @@ This app takes in 8 medical inputs from the user (like glucose level, BMI, age, 
 
 venv\Scripts\activate   # On Windows
 
-or
-
 - source venv/bin/activate   # On macOS/Linux
 
 ---
