@@ -46,14 +46,18 @@ diabetes-predictor/
 └── README.md # Project documentation
 
 
-Create and activate a virtual environment
+---
+
+## Create and activate a virtual environment
 
 python -m venv venv
 venv\Scripts\activate   # On Windows
-# or
+or
 source venv/bin/activate   # On macOS/Linux
 
- Install dependencies
+---
+
+## Install dependencies
 
 pip install -r requirements.txt
 
