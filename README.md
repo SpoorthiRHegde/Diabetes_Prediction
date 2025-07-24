@@ -25,17 +25,12 @@ This app takes in 8 medical inputs from the user (like glucose level, BMI, age, 
 | Property        | Value                                 |
 |----------------|----------------------------------------|
 | Algorithm       | XGBoost Classifier                    |
-| Dataset         | Pima Indians Diabetes Dataset (UCI)   |
 | Preprocessing   | SMOTE for class balancing             |
-| Accuracy        | ~72%                                  |
-| Output          | Binary prediction (Diabetic / Not)    |
+| Accuracy        | ~75%                                  |
+| Output          | Prediction (Diabetic / Not)    |
 
 ---
 
-## 📂 File Structure
-
-<pre><code>```plaintext diabetes-predictor/ │ ├── app.py # Flask application ├── model.pkl # Trained XGBoost model ├── templates/ # HTML templates │ ├── index.html # Input form │ └── result.html # Prediction result ├── static/ # (Optional CSS, images) ├── requirements.txt # Python dependencies └── README.md # Project documentation ``` </code></pre>
----
 
 ## Create and activate a virtual environment
 
