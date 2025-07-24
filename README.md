@@ -35,8 +35,11 @@ This app takes in 8 medical inputs from the user (like glucose level, BMI, age, 
 ## Create and activate a virtual environment
 
 - python -m venv venv
+
 venv\Scripts\activate   # On Windows
+
 or
+
 - source venv/bin/activate   # On macOS/Linux
 
 ---
