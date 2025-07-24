@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Risk Assessment</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Health Risk Assessment Tool</h1>
+            <p>Evaluate your risk for chronic health conditions</p>
+        </header>
+        
+        <div id="inputForm" class="form-container">
+            <h2>Personal Health Information</h2>
+            <form id="healthForm" onsubmit="event.preventDefault();">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="age">Age (years):</label>
+                        <input type="number" id="age" name="age" min="1" max="120" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sex">Sex:</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select</option>
+                            <option value="1">Male</option>
+                            <option value="0">Female</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bmi">BMI:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="bmi" name="bmi" step="0.1" min="10" max="50" required>
+                            <button type="button" class="btn btn-secondary" onclick="openBMIPopup()">Calc BMI</button>
+                        </div>
+                    </div>
+
+                    
+                    <div class="form-group">
+                        <label for="highChol">High Cholesterol:</label>
+                        <select id="highChol" name="highChol" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cholCheck">Cholesterol Check in Past 5 Years:</label>
+                        <select id="cholCheck" name="cholCheck" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="smoker">Smoker:</label>
+                        <select id="smoker" name="smoker" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="heartDisease">Heart Disease or Heart Attack:</label>
+                        <select id="heartDisease" name="heartDisease" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="physActivity">Physical Activity:</label>
+                        <select id="physActivity" name="physActivity" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fruits">Consume Fruit 1+ times per day:</label>
+                        <select id="fruits" name="fruits" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="veggies">Consume Vegetables 1+ times per day:</label>
+                        <select id="veggies" name="veggies" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="alcohol">Heavy Alcohol Consumption:</label>
+                        <select id="alcohol" name="alcohol" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="genHlth">General Health (1-5 scale, 1=Excellent, 5=Poor):</label>
+                        <select id="genHlth" name="genHlth" required>
+                            <option value="">Select</option>
+                            <option value="1">1 - Excellent</option>
+                            <option value="2">2 - Very Good</option>
+                            <option value="3">3 - Good</option>
+                            <option value="4">4 - Fair</option>
+                            <option value="5">5 - Poor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="mentHlth">Days of Poor Mental Health (past 30 days):</label>
+                        <input type="number" id="mentHlth" name="mentHlth" min="0" max="30" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="physHlth">Days of Poor Physical Health (past 30 days):</label>
+                        <input type="number" id="physHlth" name="physHlth" min="0" max="30" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="diffWalk">Difficulty Walking or Climbing Stairs:</label>
+                        <select id="diffWalk" name="diffWalk" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stroke">Ever Had a Stroke:</label>
+                        <select id="stroke" name="stroke" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="highBP">High Blood Pressure:</label>
+                        <select id="highBP" name="highBP" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-block" id="predictBtn">Assess My Health Risk</button>
+            </form>
+        </div>
+        
+        <div id="resultContainer" class="result-container">
+            <div class="result-header">
+                <h2>Your Health Risk Assessment</h2>
+            </div>
+            
+            <div class="progress-container">
+                <div id="riskBar" class="progress-bar"></div>
+            </div>
+            
+            <div id="riskLevel" class="risk-level"></div>
+            
+            <div id="recommendations" class="recommendations">
+                <h3>Recommendations</h3>
+                <ul id="recommendationList"></ul>
+            </div>
+            
+            <div class="action-buttons">
+                <button id="backBtn" class="btn btn-secondary">Back to Form</button>
+                <button id="downloadBtn" class="btn btn-success">Download Report</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <div id="bmiPopup" style="display:none; position: fixed; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); background: white; border-radius: 8px; 
+    padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.3); z-index: 1000;">
+    
+    <h3>Calculate BMI</h3>
+    <label for="height">Height (in meters):</label>
+    <input type="number" id="height" step="0.01" placeholder="e.g. 1.75"><br><br>
+    
+    <label for="weight">Weight (in kg):</label>
+    <input type="number" id="weight" step="0.1" placeholder="e.g. 70"><br><br>
+    
+    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeBMIPopup()">Cancel</button>
+        <button class="btn btn-success" onclick="calculateBMI()">Calculate</button>
+    </div>
+</div>
+
+<!-- Overlay to darken background when popup is open -->
+<div id="bmiOverlay" style="display:none; position: fixed; top: 0; left: 0; 
+    width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); 
+    z-index: 999;"></div>
+
+</body>
+</html>
