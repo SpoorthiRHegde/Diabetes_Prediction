@@ -194,7 +194,6 @@ function openBMIPopup() {
 function closeBMIPopup() {
     document.getElementById('bmiPopup').style.display = 'none';
     document.getElementById('bmiOverlay').style.display = 'none';
-    // Optional: clear inputs
     document.getElementById('height').value = '';
     document.getElementById('weight').value = '';
 }

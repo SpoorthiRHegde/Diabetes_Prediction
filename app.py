@@ -86,7 +86,6 @@ def train_and_save_model():
         print("\n📋 Classification Report:")
         print(classification_report(y_test, y_pred))
 
-        # Save model and scaler
         joblib.dump(model, MODEL_FILE)
         joblib.dump(scaler, SCALER_FILE)
         

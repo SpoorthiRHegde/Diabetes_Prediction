@@ -198,7 +198,7 @@ input, select {
     background-color: #5a6268;
 }
 
-/* Optional: smooth transition or popup effect */
+
 #bmiPopup {
     transition: all 0.3s ease-in-out;
 }
