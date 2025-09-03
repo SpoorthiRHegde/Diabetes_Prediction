@@ -3,8 +3,10 @@ from flask_cors import CORS
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from imblearn.over_sampling import SMOTE
-from xgboost import XGBClassifier
 import pandas as pd
 import numpy as np
 import traceback
@@ -18,11 +20,17 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
+import time
 
 app = Flask(__name__, static_folder='templates', static_url_path='')
 CORS(app)
 
-MODEL_FILE = 'diabetes_model.pkl'
+# Model files for each algorithm
+MODEL_FILES = {
+    'svm': 'diabetes_model_svm.pkl',
+    'random_forest': 'diabetes_model_random_forest.pkl',
+    'logistic_regression': 'diabetes_model_logistic_regression.pkl'
+}
 SCALER_FILE = 'diabetes_scaler.pkl'
 
 # Mapping between form field names and model feature names
@@ -46,8 +54,9 @@ FEATURE_MAPPING = {
     'highBP': 'highbp'
 }
 
-def train_and_save_model():
+def train_and_save_models():
     try:
+        print("📖 Loading dataset...")
         df = pd.read_csv('diabetes_data.csv')
         
         # Standardize column names (lowercase, no spaces)
@@ -55,10 +64,20 @@ def train_and_save_model():
         if 'diabetes' not in df.columns:
             raise ValueError("Missing 'diabetes' column")
 
+        # Sample a smaller subset if dataset is large
+        if len(df) > 10000:
+            print(f"📊 Large dataset detected ({len(df)} rows). Sampling 5000 rows for faster training...")
+            df = df.sample(n=5000, random_state=42)
+
         X = df.drop('diabetes', axis=1)
         y = df['diabetes']
 
+        print(f"📊 Dataset shape: {X.shape}")
+        print(f"📈 Class distribution: {y.value_counts().to_dict()}")
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+        
+        print("🔄 Applying SMOTE for class balancing...")
         smote = SMOTE(random_state=42)
         X_res, y_res = smote.fit_resample(X_train, y_train)
 
@@ -66,51 +85,121 @@ def train_and_save_model():
         X_res_scaled = scaler.fit_transform(X_res)
         X_test_scaled = scaler.transform(X_test)
 
-        model = XGBClassifier(
-            n_estimators=200,
-            learning_rate=0.05,
-            max_depth=5,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42,
-            use_label_encoder=False,
-            eval_metric='logloss'
-        )
-        model.fit(X_res_scaled, y_res)
-        y_pred = model.predict(X_test_scaled)
+        # Initialize all models with optimized parameters
+        models = {
+            'svm': LinearSVC(
+                C=1.0,
+                random_state=42,
+                max_iter=1000,
+                dual=False
+            ),
+            'random_forest': RandomForestClassifier(
+                n_estimators=50,  # Reduced from 100
+                max_depth=8,      # Reduced from 10
+                min_samples_split=5,
+                min_samples_leaf=2,
+                random_state=42,
+                n_jobs=-1  # Use all CPU cores
+            ),
+            'logistic_regression': LogisticRegression(
+                C=1.0,
+                solver='lbfgs',
+                max_iter=1000,
+                random_state=42,
+                n_jobs=-1  # Use all CPU cores
+            )
+        }
 
-        print("✅ Model trained with SMOTE")
-        print(f"📊 Accuracy: {accuracy_score(y_test, y_pred):.4f}")
-        print("📉 Confusion Matrix:")
-        print(confusion_matrix(y_test, y_pred))
-        print("\n📋 Classification Report:")
-        print(classification_report(y_test, y_pred))
+        results = {}
+        
+        # Train and evaluate each model
+        for model_name, model in models.items():
+            print(f"\n🏋️ Training {model_name}...")
+            start_time = time.time()
+            
+            model.fit(X_res_scaled, y_res)
+            training_time = time.time() - start_time
+            
+            y_pred = model.predict(X_test_scaled)
+            
+            # For LinearSVC, we need to use decision function for probabilities
+            if hasattr(model, 'predict_proba'):
+                y_proba = model.predict_proba(X_test_scaled)[:, 1]
+            else:
+                y_proba = None
+            
+            accuracy = accuracy_score(y_test, y_pred)
+            results[model_name] = {
+                'model': model,
+                'accuracy': accuracy,
+                'training_time': training_time,
+                'predictions': y_pred,
+                'probabilities': y_proba
+            }
+            
+            print(f"✅ {model_name} trained in {training_time:.2f} seconds")
+            print(f"📊 Accuracy: {accuracy:.4f}")
+            print("📉 Confusion Matrix:")
+            print(confusion_matrix(y_test, y_pred))
+            print("-" * 50)
 
-        joblib.dump(model, MODEL_FILE)
+        # Save all models and scaler
+        for model_name, result in results.items():
+            joblib.dump(result['model'], MODEL_FILES[model_name])
         joblib.dump(scaler, SCALER_FILE)
         
-        return model, scaler
+        # Return the best model based on accuracy
+        best_model_name = max(results.items(), key=lambda x: x[1]['accuracy'])[0]
+        print(f"\n🏆 Best model: {best_model_name} with accuracy {results[best_model_name]['accuracy']:.4f}")
+        print("📋 Model accuracies:")
+        for name, result in results.items():
+            print(f"   {name}: {result['accuracy']:.4f} (trained in {result['training_time']:.2f}s)")
+        
+        return results, scaler
 
     except Exception as e:
-        print(f"❌ Error in train_model: {e}")
+        print(f"❌ Error in train_models: {e}")
+        print(traceback.format_exc())
         return None, None
 
-def load_model():
-    if os.path.exists(MODEL_FILE) and os.path.exists(SCALER_FILE):
+def load_models():
+    models = {}
+    scaler = None
+    
+    if os.path.exists(SCALER_FILE):
         try:
-            model = joblib.load(MODEL_FILE)
             scaler = joblib.load(SCALER_FILE)
-            print("✅ Model and scaler loaded from disk")
-            return model, scaler
+            print("✅ Scaler loaded from disk")
+            
+            for model_name, model_file in MODEL_FILES.items():
+                if os.path.exists(model_file):
+                    models[model_name] = joblib.load(model_file)
+                    print(f"✅ {model_name} model loaded from disk")
+                else:
+                    print(f"⚠️ {model_name} model file not found: {model_file}")
+                    
         except Exception as e:
-            print(f"❌ Error loading model: {e}")
+            print(f"❌ Error loading models: {e}")
             return None, None
-    return None, None
+    
+    return models, scaler
 
-# Try to load existing model, otherwise train new one
-model, scaler = load_model()
-if model is None or scaler is None:
-    model, scaler = train_and_save_model()
+# Try to load existing models, otherwise train new ones
+models, scaler = load_models()
+if not models or scaler is None:
+    print("📊 No models found. Training new models...")
+    training_results, scaler = train_and_save_models()
+    if training_results:
+        models = {name: result['model'] for name, result in training_results.items()}
+        print("✅ All models trained successfully!")
+    else:
+        print("❌ Failed to train models")
+        # Create dummy models to prevent server crash
+        models = {
+            'random_forest': RandomForestClassifier(n_estimators=10, random_state=42),
+            'logistic_regression': LogisticRegression(random_state=42)
+        }
+        print("⚠️ Using dummy models for fallback")
 
 @app.route('/')
 def index():
@@ -124,8 +213,15 @@ def predict():
 
         data = request.get_json()
         
+        # Get model selection (default to random_forest if not specified)
+        selected_model = data.get('model', 'random_forest')
+        if selected_model not in models:
+            return jsonify({'error': f'Model {selected_model} not available', 'status': 'error'}), 400
+        
+        model = models[selected_model]
+        
         # Get the model's expected feature names (from the scaler)
-        expected_features = scaler.feature_names_in_
+        expected_features = scaler.feature_names_in_ if hasattr(scaler, 'feature_names_in_') else None
         
         # Create input DataFrame with correct feature names
         input_data = {}
@@ -136,18 +232,33 @@ def predict():
                 return jsonify({'error': f'Missing required field: {form_field}', 'status': 'error'}), 400
         
         # Ensure the features are in the exact same order as during training
-        input_df = pd.DataFrame([input_data])[expected_features]
+        if expected_features is not None:
+            input_df = pd.DataFrame([input_data])[expected_features]
+        else:
+            input_df = pd.DataFrame([input_data])
         
         if model is None or scaler is None:
             return jsonify({'error': 'Model or scaler not loaded', 'status': 'error'}), 500
 
         input_scaled = scaler.transform(input_df)
         prediction = int(model.predict(input_scaled)[0])
-        probability = round(float(model.predict_proba(input_scaled)[0][1]), 4)
+        
+        # Get probability if the model supports it
+        if hasattr(model, 'predict_proba'):
+            probability = round(float(model.predict_proba(input_scaled)[0][1]), 4)
+        else:
+            # For LinearSVC, use decision function
+            if hasattr(model, 'decision_function'):
+                decision_score = model.decision_function(input_scaled)[0]
+                probability = 1 / (1 + np.exp(-decision_score))  # Sigmoid transformation
+                probability = round(float(probability), 4)
+            else:
+                probability = 1.0 if prediction == 1 else 0.0
 
         return jsonify({
             'prediction': prediction,
             'probability': probability,
+            'model_used': selected_model,
             'status': 'success'
         })
 
@@ -156,6 +267,15 @@ def predict():
         app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
+@app.route('/models', methods=['GET'])
+def get_available_models():
+    """Return list of available models"""
+    available_models = list(models.keys())
+    return jsonify({
+        'models': available_models,
+        'default_model': 'random_forest',
+        'status': 'success'
+    })
 
 def format_field_name(field_name):
     field_map = {
@@ -179,7 +299,6 @@ def format_field_name(field_name):
     }
     return field_map.get(field_name, field_name)
 
-
 def format_field_value(field_name, value):
     try:
         val = float(value)
@@ -202,7 +321,6 @@ def format_field_value(field_name, value):
             return str(val)
     except:
         return str(value)
-
 
 @app.route('/generate_report', methods=['POST'])
 def generate_report():
@@ -231,16 +349,18 @@ def generate_report():
         story.append(Paragraph("Risk Assessment Results", heading_style))
         prediction = data.get('prediction', 0)
         probability = data.get('probability', 0)
+        model_used = data.get('model_used', 'unknown')
         risk_status = 'High Risk' if prediction else 'Low Risk'
         risk_percentage = f"{probability * 100:.1f}%"
         risk_color = colors.red if prediction else colors.green
         risk_text = f"<b><font color='{risk_color}'>Risk Level: {risk_status} ({risk_percentage})</font></b>"
         story.append(Paragraph(risk_text, styles['Normal']))
+        story.append(Paragraph(f"<b>Model Used:</b> {model_used.upper()}", styles['Normal']))
         story.append(Spacer(1, 20))
 
         story.append(Paragraph("Personal Health Information", heading_style))
         table_data = [['Health Factor', 'Your Response']]
-        excluded_fields = ['timestamp', 'prediction', 'probability']
+        excluded_fields = ['timestamp', 'prediction', 'probability', 'model_used']
         for key, value in data.items():
             if key not in excluded_fields:
                 table_data.append([format_field_name(key), format_field_value(key, value)])
@@ -309,6 +429,5 @@ def generate_report():
         app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
